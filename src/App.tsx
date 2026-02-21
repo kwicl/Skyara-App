@@ -69,9 +69,10 @@ export default function App() {
     miscFeesPercentage: DEFAULT_INVESTMENT.MISC_FEES_PERCENT,
     miscFeesFixed: 5000,
     salePricePerM2: DEFAULT_INVESTMENT.SALE_PRICE,
-    deductionStairsPercentage: DEFAULT_INVESTMENT.STAIRS_DEDUCTION,
-    deductionWallsPercentage: DEFAULT_INVESTMENT.WALLS_DEDUCTION,
+    deductionStairsM2: DEFAULT_INVESTMENT.STAIRS_DEDUCTION_M2,
+    deductionWallsM2: DEFAULT_INVESTMENT.WALLS_DEDUCTION_M2,
     stateTaxPercentage: DEFAULT_INVESTMENT.STATE_TAX,
+    connectionFees: DEFAULT_INVESTMENT.CONNECTION_FEES,
   });
 
   // Recalculate surfaces based on rules
@@ -88,11 +89,11 @@ export default function App() {
         surface = state.terrainArea;
       }
       
-      const sellableSurface = level.type === LevelType.FOUNDATION ? 0 : surface * (1 - (state.deductionStairsPercentage + state.deductionWallsPercentage) / 100);
+      const sellableSurface = level.type === LevelType.FOUNDATION ? 0 : Math.max(0, surface - state.deductionStairsM2 - state.deductionWallsM2);
 
       return { ...level, surface, sellableSurface };
     });
-  }, [state.terrainArea, state.facades, state.levels, state.deductionStairsPercentage, state.deductionWallsPercentage]);
+  }, [state.terrainArea, state.facades, state.levels, state.deductionStairsM2, state.deductionWallsM2]);
 
   const totals = useMemo(() => {
     let grosOeuvre = 0;
@@ -114,7 +115,7 @@ export default function App() {
     const constructionCost = grosOeuvre + finition;
     const landCost = state.terrainArea * state.landPricePerM2;
     const miscFeesPercentValue = constructionCost * (state.miscFeesPercentage / 100);
-    const totalInvestment = landCost + state.notaryFees + constructionCost + miscFeesPercentValue + state.miscFeesFixed;
+    const totalInvestment = landCost + state.notaryFees + constructionCost + miscFeesPercentValue + state.miscFeesFixed + state.connectionFees;
     
     const totalRevenue = totalSellableSurface * state.salePricePerM2;
     const grossProfit = totalRevenue - totalInvestment;
@@ -148,12 +149,12 @@ export default function App() {
       maxAllowedSurface: state.terrainArea * state.cos,
       isOverCOS: totalSurface > (state.terrainArea * state.cos)
     };
-  }, [calculatedLevels, state.terrainArea, state.cos, state.landPricePerM2, state.notaryFees, state.miscFeesPercentage, state.miscFeesFixed, state.salePricePerM2, state.stateTaxPercentage]);
+  }, [calculatedLevels, state.terrainArea, state.cos, state.landPricePerM2, state.notaryFees, state.miscFeesPercentage, state.miscFeesFixed, state.salePricePerM2, state.stateTaxPercentage, state.connectionFees]);
 
   const chartData = [
-    { name: 'Terrain', value: totals.landCost, color: '#0ea5e3' },
-    { name: 'Construction', value: totals.constructionCost, color: '#be123c' },
-    { name: 'Frais & Taxes', value: state.notaryFees + state.miscFeesFixed + (totals.constructionCost * (state.miscFeesPercentage / 100)), color: '#64748b' },
+    { name: 'Terrain', value: totals.landCost, color: '#0d9488' }, // Teal 600
+    { name: 'Construction', value: totals.constructionCost, color: '#0f172a' }, // Slate 900
+    { name: 'Frais & Taxes', value: state.notaryFees + state.miscFeesFixed + state.connectionFees + (totals.constructionCost * (state.miscFeesPercentage / 100)), color: '#f59e0b' }, // Amber 500
   ];
 
   const addLevel = () => {
@@ -191,22 +192,17 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[#0f172a]">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50">
       {/* Sidebar - Mobile Header / Desktop Sidebar */}
-      <aside className="w-full lg:w-96 bg-slate-900/80 border-r border-white/5 flex flex-col overflow-y-auto lg:h-screen safe-pt">
-        <div className="p-8 border-b border-white/5 flex items-center justify-between lg:block">
+      <aside className="w-full lg:w-96 bg-white border-r border-slate-200 flex flex-col overflow-y-auto lg:h-screen safe-pt">
+        <div className="p-8 border-b border-slate-100 flex items-center justify-between lg:block">
           <div className="flex items-center gap-5">
-            <div className="w-14 h-14 bg-gradient-to-br from-rose-700 to-rose-950 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-rose-900/40 border border-rose-500/20 overflow-hidden">
-              <img 
-                src="https://picsum.photos/seed/modern-building/200/200" 
-                alt="Skyara Logo" 
-                className="w-full h-full object-cover opacity-80"
-                referrerPolicy="no-referrer"
-              />
+            <div className="w-14 h-14 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-600 shadow-sm border border-teal-100 overflow-hidden">
+              <Building2 size={32} />
             </div>
             <div>
-              <h1 className="font-black text-2xl tracking-tighter text-white">Sky <span className="text-sky-400">ara</span> Icl</h1>
-              <p className="text-[10px] text-rose-500 uppercase font-black tracking-[0.3em]">Futuristic Real Estate</p>
+              <h1 className="font-display font-bold text-2xl tracking-tight text-slate-900">Skyara <span className="text-teal-600">icl</span></h1>
+              <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Expertise Immobilière</p>
             </div>
           </div>
           <button className="lg:hidden p-2 text-slate-400">
@@ -216,31 +212,31 @@ export default function App() {
 
         <div className="p-8 space-y-10">
           <section>
-            <h3 className="text-[10px] font-black text-sky-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
-              <div className="w-1 h-3 bg-rose-600 rounded-full" /> Paramètres Terrain
+            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-teal-500" /> Configuration Terrain
             </h3>
             <div className="space-y-6">
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Surface Terrain (m²)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Surface Terrain (m²)</label>
                 <input 
                   type="number" 
                   value={state.terrainArea} 
                   onChange={(e) => setState(prev => ({ ...prev, terrainArea: Number(e.target.value) }))}
-                  className="input-field neon-border-sky"
+                  className="input-field"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Prix Achat (DH/m²)</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Prix Achat Terrain (DH/m²)</label>
                 <input 
                   type="number" 
                   value={state.landPricePerM2} 
                   onChange={(e) => setState(prev => ({ ...prev, landPricePerM2: Number(e.target.value) }))}
-                  className="input-field"
+                  className="input-field border-teal-100 focus:border-teal-500"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">COS</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">COS</label>
                   <input 
                     type="number" step="0.1"
                     value={state.cos} 
@@ -249,7 +245,7 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Façades</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Façades</label>
                   <select 
                     value={state.facades}
                     onChange={(e) => setState(prev => ({ ...prev, facades: Number(e.target.value) as 1 | 2 }))}
@@ -264,13 +260,78 @@ export default function App() {
           </section>
 
           <section>
-            <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
-              <div className="w-1 h-3 bg-sky-400 rounded-full" /> Charges & Fiscalité
+            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-teal-500" /> Vente & Fiscalité
+            </h3>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Prix de Vente (DH/m²)</label>
+                <input 
+                  type="number" 
+                  value={state.salePricePerM2} 
+                  onChange={(e) => setState(prev => ({ ...prev, salePricePerM2: Number(e.target.value) }))}
+                  className="input-field border-teal-200 focus:border-teal-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Taxe État %</label>
+                  <input 
+                    type="number" 
+                    value={state.stateTaxPercentage} 
+                    onChange={(e) => setState(prev => ({ ...prev, stateTaxPercentage: Number(e.target.value) }))}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Raccord. (DH)</label>
+                  <input 
+                    type="number" 
+                    value={state.connectionFees} 
+                    onChange={(e) => setState(prev => ({ ...prev, connectionFees: Number(e.target.value) }))}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-teal-500" /> Déductions Surface
             </h3>
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Notaire (DH)</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Escaliers (m²)</label>
+                  <input 
+                    type="number" 
+                    value={state.deductionStairsM2} 
+                    onChange={(e) => setState(prev => ({ ...prev, deductionStairsM2: Number(e.target.value) }))}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Murs (m²)</label>
+                  <input 
+                    type="number" 
+                    value={state.deductionWallsM2} 
+                    onChange={(e) => setState(prev => ({ ...prev, deductionWallsM2: Number(e.target.value) }))}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-teal-500" /> Charges Fixes
+            </h3>
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Notaire (DH)</label>
                   <input 
                     type="number" 
                     value={state.notaryFees} 
@@ -279,7 +340,7 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Divers (DH)</label>
+                  <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Divers (DH)</label>
                   <input 
                     type="number" 
                     value={state.miscFeesFixed} 
@@ -288,130 +349,85 @@ export default function App() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Divers (%)</label>
-                  <input 
-                    type="number" 
-                    value={state.miscFeesPercentage} 
-                    onChange={(e) => setState(prev => ({ ...prev, miscFeesPercentage: Number(e.target.value) }))}
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Taxe État %</label>
-                  <input 
-                    type="number" 
-                    value={state.stateTaxPercentage} 
-                    onChange={(e) => setState(prev => ({ ...prev, stateTaxPercentage: Number(e.target.value) }))}
-                    className="input-field"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">Prix de Vente (DH/m²)</label>
-                <input 
-                  type="number" 
-                  value={state.salePricePerM2} 
-                  onChange={(e) => setState(prev => ({ ...prev, salePricePerM2: Number(e.target.value) }))}
-                  className="input-field neon-border-bordeaux"
-                />
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-8">Structure</h3>
-            <div className="flex items-center gap-3">
-              <button onClick={removeLevel} className="btn-secondary flex-1">
-                <Minus size={18} />
-              </button>
-              <button onClick={addLevel} className="btn-primary flex-1">
-                <Plus size={18} />
-              </button>
             </div>
           </section>
 
           <button 
             onClick={handleQuickSimulation}
-            className="w-full py-5 bg-gradient-to-r from-rose-700 to-rose-900 text-white rounded-xl font-black uppercase tracking-widest hover:shadow-2xl hover:shadow-rose-900/40 transition-all active:scale-95 flex items-center justify-center gap-3 border border-rose-500/30"
+            className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-3 shadow-lg shadow-slate-200"
           >
-            <TrendingUp size={20} /> Simulation R+2
+            <TrendingUp size={20} /> Simulation 120m²
           </button>
-        </div>
-        <div className="mt-auto p-8 safe-pb">
-          <div className="p-5 bg-slate-800/50 rounded-2xl border border-white/5">
-            <p className="text-[10px] text-slate-400 font-bold leading-relaxed">
-              Calculs basés sur les standards marocains : déductions cour ({state.facades === 1 ? '16m²' : '9m²'}) et balcons ({SURFACE_RULES.ENCORBELLEMENT}m²).
-            </p>
-          </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 lg:p-12 overflow-y-auto bg-[#0f172a] safe-pb">
+      <main className="flex-1 p-6 lg:p-12 overflow-y-auto bg-slate-50 safe-pb">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12 lg:mt-0 mt-6">
           <div>
-            <h2 className="text-4xl lg:text-5xl font-black text-white tracking-tighter">Sky <span className="text-sky-400">ara</span> Icl <span className="text-rose-600">Core</span></h2>
-            <p className="text-slate-500 font-medium mt-2">Intelligence Artificielle de Rentabilité Immobilière</p>
+            <h2 className="text-4xl lg:text-5xl font-display font-bold text-slate-900 tracking-tight">Analyse <span className="text-teal-600">Financière</span></h2>
+            <p className="text-slate-500 font-medium mt-2">Expertise de rentabilité Construction R+2</p>
           </div>
           <button 
             onClick={() => generatePDF(state, totals)}
             className="btn-primary w-full md:w-auto px-8"
           >
-            <Download size={20} /> Rapport Futuriste PDF
+            <Download size={20} /> Exporter Rapport PDF
           </button>
         </header>
 
-        {/* Status Cards - Futuristic Design */}
+        {/* Status Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8 mb-12">
-          <motion.div whileHover={{ scale: 1.02 }} className="card-futuristic">
+          <motion.div whileHover={{ scale: 1.02 }} className="card-stat">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400">
+              <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
                 <DollarSign size={20} />
               </div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Investissement</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Investissement</p>
             </div>
-            <h3 className="text-3xl font-black text-white">{(totals.totalInvestment / 10000).toFixed(1)} <span className="text-sm font-bold text-slate-500">M Cts</span></h3>
-            <p className="text-[10px] font-bold text-sky-400 mt-3 tracking-wider">{totals.totalInvestment.toLocaleString()} DH</p>
+            <h3 className="text-3xl font-bold text-slate-900">{(totals.totalInvestment / 10000).toFixed(1)} <span className="text-sm font-medium text-slate-400">M Cts</span></h3>
+            <div className="mt-3 flex flex-col gap-1">
+              <p className="text-[11px] font-bold text-teal-600">{totals.totalInvestment.toLocaleString()} DH</p>
+              <p className="text-[9px] text-slate-400 font-medium">Terrain: {totals.landCost.toLocaleString()} DH</p>
+            </div>
           </motion.div>
 
-          <motion.div whileHover={{ scale: 1.02 }} className="card-futuristic">
+          <motion.div whileHover={{ scale: 1.02 }} className="card-stat">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-slate-500/10 flex items-center justify-center text-slate-400">
+              <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600">
                 <TrendingUp size={20} />
               </div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Chiffre d'Affaires</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chiffre d'Affaires</p>
             </div>
-            <h3 className="text-3xl font-black text-white">{(totals.totalRevenue / 10000).toFixed(1)} <span className="text-sm font-bold text-slate-500">M Cts</span></h3>
-            <p className="text-[10px] font-bold text-slate-400 mt-3 tracking-wider">{totals.totalRevenue.toLocaleString()} DH</p>
+            <h3 className="text-3xl font-bold text-slate-900">{(totals.totalRevenue / 10000).toFixed(1)} <span className="text-sm font-medium text-slate-400">M Cts</span></h3>
+            <p className="text-[11px] font-bold text-slate-600 mt-3">{totals.totalRevenue.toLocaleString()} DH</p>
           </motion.div>
 
           <motion.div 
             whileHover={{ scale: 1.02 }} 
-            className={cn("card-futuristic border-rose-500/20", totals.netProfit >= 0 ? "bg-rose-900/40" : "bg-rose-950/60")}
+            className={cn("card-stat", totals.netProfit >= 0 ? "border-teal-100 bg-teal-50/30" : "border-rose-100 bg-rose-50/30")}
           >
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center text-rose-400">
+              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", totals.netProfit >= 0 ? "bg-teal-100 text-teal-600" : "bg-rose-100 text-rose-600")}>
                 <Briefcase size={20} />
               </div>
-              <p className="text-[10px] font-black text-rose-300 uppercase tracking-widest">Bénéfice Net</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bénéfice Net</p>
             </div>
-            <h3 className="text-3xl font-black text-white">{(totals.netProfit / 10000).toFixed(1)} <span className="text-sm font-bold text-rose-300/60">M Cts</span></h3>
-            <p className="text-[10px] font-bold text-rose-400 mt-3 tracking-wider">Taxe: {totals.stateTax.toLocaleString()} DH</p>
+            <h3 className="text-3xl font-bold text-slate-900">{(totals.netProfit / 10000).toFixed(1)} <span className="text-sm font-medium text-slate-400">M Cts</span></h3>
+            <p className="text-[11px] font-bold text-teal-600 mt-3">Taxe: {totals.stateTax.toLocaleString()} DH</p>
           </motion.div>
 
-          <motion.div whileHover={{ scale: 1.02 }} className="card-futuristic">
+          <motion.div whileHover={{ scale: 1.02 }} className="card-stat">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
                 <Percent size={20} />
               </div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">ROI Net</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ROI Net</p>
             </div>
-            <h3 className="text-3xl font-black text-white">{((totals.netProfit / totals.totalInvestment) * 100).toFixed(1)} <span className="text-sm font-bold text-slate-500">%</span></h3>
-            <div className="mt-4 h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+            <h3 className="text-3xl font-bold text-slate-900">{((totals.netProfit / totals.totalInvestment) * 100).toFixed(1)} <span className="text-sm font-medium text-slate-400">%</span></h3>
+            <div className="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-sky-400 rounded-full shadow-[0_0_10px_rgba(14,165,233,0.5)]"
+                className="h-full bg-teal-600 rounded-full"
                 style={{ width: `${Math.max(0, Math.min(100, (totals.netProfit / totals.totalInvestment) * 100))}%` }}
               />
             </div>
@@ -420,41 +436,41 @@ export default function App() {
 
         {/* Detailed Analysis Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-10 mb-12">
-          <section className="card-futuristic p-0 overflow-hidden">
-            <div className="p-8 border-b border-white/5 flex items-center justify-between bg-slate-900/20">
-              <h4 className="font-black text-white flex items-center gap-3 uppercase tracking-[0.2em] text-xs">
-                <Calculator size={20} className="text-sky-400" /> Analyse Structurelle
+          <section className="glass-panel overflow-hidden">
+            <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-white">
+              <h4 className="font-display font-bold text-slate-900 flex items-center gap-3 uppercase tracking-wider text-xs">
+                <Calculator size={20} className="text-teal-600" /> Analyse Structurelle
               </h4>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-900/40 text-[10px] uppercase tracking-[0.2em] font-black text-slate-500">
-                    <th className="px-8 py-6">Niveau</th>
-                    <th className="px-8 py-6">Surface</th>
-                    <th className="px-8 py-6">Vendable</th>
-                    <th className="px-8 py-6 text-right">Revenu</th>
+                  <tr className="bg-slate-50 text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                    <th className="px-8 py-5">Niveau</th>
+                    <th className="px-8 py-5">Surface</th>
+                    <th className="px-8 py-5">Vendable</th>
+                    <th className="px-8 py-5 text-right">Revenu</th>
                   </tr>
                 </thead>
-                <tbody className="divide-white/5 divide-y">
+                <tbody className="divide-slate-100 divide-y">
                   {calculatedLevels.map((level) => {
                     const isFoundation = level.type === LevelType.FOUNDATION;
                     const revenue = (level as any).sellableSurface * state.salePricePerM2;
                     return (
-                      <tr key={level.id} className="hover:bg-white/5 transition-colors group">
-                        <td className="px-8 py-7">
-                          <span className="font-bold text-white">{level.name}</span>
+                      <tr key={level.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-8 py-6">
+                          <span className="font-bold text-slate-900">{level.name}</span>
                         </td>
-                        <td className="px-8 py-7">
-                          <span className="text-sm font-mono font-bold text-slate-400">{level.surface.toFixed(1)} m²</span>
+                        <td className="px-8 py-6">
+                          <span className="text-sm font-medium text-slate-500">{level.surface.toFixed(1)} m²</span>
                         </td>
-                        <td className="px-8 py-7">
-                          <span className="text-sm font-black text-sky-400">
+                        <td className="px-8 py-6">
+                          <span className="text-sm font-bold text-teal-600">
                             {isFoundation ? "-" : `${(level as any).sellableSurface.toFixed(1)} m²`}
                           </span>
                         </td>
-                        <td className="px-8 py-7 text-right">
-                          <span className="font-black text-white">
+                        <td className="px-8 py-6 text-right">
+                          <span className="font-bold text-slate-900">
                             {isFoundation ? "-" : `${revenue.toLocaleString()} DH`}
                           </span>
                         </td>
@@ -467,9 +483,9 @@ export default function App() {
           </section>
 
           <div className="space-y-10">
-            <section className="card-futuristic p-10">
-              <h4 className="font-black text-white mb-10 flex items-center gap-3 uppercase tracking-[0.2em] text-xs">
-                <PieChart size={20} className="text-rose-600" /> Répartition Capital
+            <section className="glass-panel p-10">
+              <h4 className="font-display font-bold text-slate-900 mb-10 flex items-center gap-3 uppercase tracking-wider text-xs">
+                <PieChart size={20} className="text-teal-600" /> Répartition Capital
               </h4>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -489,8 +505,7 @@ export default function App() {
                       ))}
                     </Pie>
                     <Tooltip 
-                      contentStyle={{ backgroundColor: '#0f172a', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
-                      itemStyle={{ color: '#fff' }}
+                      contentStyle={{ backgroundColor: '#fff', borderRadius: '15px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                       formatter={(value: number) => `${value.toLocaleString()} DH`}
                     />
                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
@@ -501,93 +516,145 @@ export default function App() {
           </div>
         </div>
 
-        {/* Profitability & Materials */}
+        {/* Detailed Construction Breakdown (Dynamic Section) */}
+        <section className="glass-panel p-10 mb-12">
+          <h4 className="font-display font-bold text-slate-900 mb-10 flex items-center gap-3 uppercase tracking-wider text-xs">
+            <Layers size={20} className="text-teal-600" /> Détails Techniques de Construction (Dynamique - {state.terrainArea}m²)
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="space-y-4">
+              <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-2">1. Fondations</h5>
+              <ul className="text-xs space-y-2 text-slate-600">
+                <li className="flex justify-between"><span>Main d'œuvre</span> <span className="font-bold">{Math.round(state.terrainArea * 115).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Pierres / Blocage</span> <span className="font-bold">{Math.round(state.terrainArea * 27.5).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Sable / Gravier</span> <span className="font-bold">{Math.round(state.terrainArea * 79.17).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Ciment ({Math.round(state.terrainArea * 1.16)} sacs)</span> <span className="font-bold">{Math.round(state.terrainArea * 95.67).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Acier ({Math.round(state.terrainArea * 0.108)} qtx)</span> <span className="font-bold">{Math.round(state.terrainArea * 95.33).toLocaleString()} DH</span></li>
+                <li className="flex justify-between border-t pt-2 text-teal-600 font-bold uppercase"><span>Total Fondations</span> <span>~{Math.round(state.terrainArea * 433.5).toLocaleString()} DH</span></li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-2">2. Gros Œuvre / Étage</h5>
+              <ul className="text-xs space-y-2 text-slate-600">
+                <li className="flex justify-between"><span>Main d'œuvre</span> <span className="font-bold">{Math.round(state.terrainArea * 230).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Briques ({Math.round(state.terrainArea * 41.6)} u)</span> <span className="font-bold">{Math.round(state.terrainArea * 120.5).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Sable / Gravier</span> <span className="font-bold">{Math.round(state.terrainArea * 79.17).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Ciment ({Math.round(state.terrainArea * 2)} sacs)</span> <span className="font-bold">{Math.round(state.terrainArea * 160.67).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Plancher / Hourdis</span> <span className="font-bold">{Math.round(state.terrainArea * 100).toLocaleString()} DH</span></li>
+                <li className="flex justify-between border-t pt-2 text-teal-600 font-bold uppercase"><span>Total par Étage</span> <span>~{Math.round(state.terrainArea * 892.5).toLocaleString()} DH</span></li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-2">3. Finition (Ex. RDC)</h5>
+              <ul className="text-xs space-y-2 text-slate-600">
+                <li className="flex justify-between"><span>Plâtre / Gypse</span> <span className="font-bold">{Math.round(state.terrainArea * 108.33).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Carrelage / Zellige</span> <span className="font-bold">{Math.round(state.terrainArea * 187.5).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Marbre (Escaliers)</span> <span className="font-bold">{Math.round(state.terrainArea * 83.33).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Menuiserie Bois</span> <span className="font-bold">{Math.round(state.terrainArea * 200).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Aluminium / Fer</span> <span className="font-bold">{Math.round(state.terrainArea * 181.67).toLocaleString()} DH</span></li>
+                <li className="flex justify-between border-t pt-2 text-teal-600 font-bold uppercase"><span>Total Finition</span> <span>~{Math.round(state.terrainArea * 840).toLocaleString()} DH</span></li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-2">4. Toiture & Terrasse</h5>
+              <ul className="text-xs space-y-2 text-slate-600">
+                <li className="flex justify-between"><span>Gros Œuvre Terrasse</span> <span className="font-bold">{Math.round(state.terrainArea * 227.67).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Carrelage Terrasse</span> <span className="font-bold">{Math.round(state.terrainArea * 125).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Peinture Façade</span> <span className="font-bold">{Math.round(state.terrainArea * 75).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Raccordements</span> <span className="font-bold">{state.connectionFees.toLocaleString()} DH</span></li>
+                <li className="flex justify-between border-t pt-2 text-teal-600 font-bold uppercase"><span>Total Terrasse</span> <span>~{Math.round(state.terrainArea * 427.67 + state.connectionFees).toLocaleString()} DH</span></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* Performance & Materials */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-12">
-          <section className="xl:col-span-2 card-futuristic p-12">
-            <h4 className="font-black text-white mb-12 flex items-center gap-3 uppercase tracking-[0.2em] text-xs">
-              <ArrowRightLeft size={20} className="text-sky-400" /> Performance Économique
+          <section className="xl:col-span-2 glass-panel p-10">
+            <h4 className="font-display font-bold text-slate-900 mb-10 flex items-center gap-3 uppercase tracking-wider text-xs">
+              <ArrowRightLeft size={20} className="text-teal-600" /> Performance Économique
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
-              <div className="p-8 bg-slate-800/40 rounded-3xl border border-white/5">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Coût Construction Moyen</p>
-                <p className="text-4xl font-black text-white">
-                  {(totals.constructionCost / totals.totalSurface).toFixed(0)} <span className="text-sm font-bold text-slate-500">DH/m²</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10">
+              <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Coût Construction Moyen</p>
+                <p className="text-4xl font-bold text-slate-900">
+                  {(totals.constructionCost / totals.totalSurface).toFixed(0)} <span className="text-sm font-medium text-slate-400">DH/m²</span>
                 </p>
               </div>
-              <div className="p-8 bg-rose-900/20 rounded-3xl border border-rose-500/20">
-                <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-4">Prix de Vente Net</p>
-                <p className="text-4xl font-black text-white">
-                  {state.salePricePerM2.toLocaleString()} <span className="text-sm font-bold text-rose-400/60">DH/m²</span>
+              <div className="p-8 bg-teal-600 rounded-3xl shadow-lg shadow-teal-200">
+                <p className="text-[10px] font-bold text-teal-100 uppercase tracking-widest mb-4">Prix de Vente Net</p>
+                <p className="text-4xl font-bold text-white">
+                  {state.salePricePerM2.toLocaleString()} <span className="text-sm font-medium text-teal-100/60">DH/m²</span>
                 </p>
               </div>
             </div>
             
-            <div className="p-10 bg-slate-950 rounded-[2.5rem] border border-white/5">
+            <div className="p-10 bg-slate-900 rounded-[2.5rem] text-white">
               <div className="flex justify-between items-center mb-8">
                 <div>
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Marge Nette</p>
-                  <p className="text-5xl font-black text-sky-400">{totals.marginPercentage.toFixed(1)}%</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Marge Nette</p>
+                  <p className="text-5xl font-bold text-teal-400">{totals.marginPercentage.toFixed(1)}%</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Profit / m² Vendable</p>
-                  <p className="text-3xl font-black text-white">
-                    {(totals.netProfit / totals.totalSellableSurface).toFixed(0)} <span className="text-sm font-bold text-slate-500">DH</span>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Profit / m² Vendable</p>
+                  <p className="text-3xl font-bold text-white">
+                    {(totals.netProfit / totals.totalSellableSurface).toFixed(0)} <span className="text-sm font-medium text-slate-400">DH</span>
                   </p>
                 </div>
               </div>
-              <div className="h-4 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5">
+              <div className="h-4 w-full bg-white/10 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.max(0, Math.min(100, totals.marginPercentage))}%` }}
-                  className="h-full bg-gradient-to-r from-sky-500 to-rose-600 rounded-full shadow-[0_0_15px_rgba(14,165,233,0.4)]"
+                  className="h-full bg-teal-400 rounded-full"
                 />
               </div>
             </div>
           </section>
 
-          <section className="card-futuristic p-12">
-            <h4 className="font-black text-white mb-10 flex items-center gap-3 uppercase tracking-[0.2em] text-xs">
-              <Layers size={20} className="text-rose-600" /> Matériaux Estimés
+          <section className="glass-panel p-10">
+            <h4 className="font-display font-bold text-slate-900 mb-10 flex items-center gap-3 uppercase tracking-wider text-xs">
+              <Layers size={20} className="text-teal-600" /> Matériaux Estimés
             </h4>
             <div className="space-y-6">
               {[
-                { label: 'Acier (Fer)', value: `${(totals.estSteel / 1000).toFixed(2)} T`, icon: 'Fe', color: 'text-sky-400 bg-sky-500/10' },
-                { label: 'Ciment', value: `${Math.round(totals.estCement)} Sacs`, icon: 'Ci', color: 'text-rose-400 bg-rose-500/10' },
-                { label: 'Briques', value: `${Math.round(totals.estBricks).toLocaleString()} U`, icon: 'Br', color: 'text-slate-400 bg-slate-500/10' },
-                { label: 'Béton', value: `${Math.round(totals.estConcrete)} m³`, icon: 'Be', color: 'text-sky-400 bg-sky-500/10' },
+                { label: 'Acier (Fer)', value: `${(totals.estSteel / 1000).toFixed(2)} T`, icon: 'Fe', color: 'text-teal-600 bg-teal-50' },
+                { label: 'Ciment', value: `${Math.round(totals.estCement)} Sacs`, icon: 'Ci', color: 'text-amber-600 bg-amber-50' },
+                { label: 'Briques', value: `${Math.round(totals.estBricks).toLocaleString()} U`, icon: 'Br', color: 'text-slate-600 bg-slate-50' },
+                { label: 'Béton', value: `${Math.round(totals.estConcrete)} m³`, icon: 'Be', color: 'text-teal-600 bg-teal-50' },
               ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-5 rounded-2xl border border-white/5 hover:border-sky-500/20 transition-all bg-slate-800/20">
+                <div key={i} className="flex items-center justify-between p-5 rounded-2xl border border-slate-50 hover:border-teal-100 transition-all">
                   <div className="flex items-center gap-5">
-                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center font-black text-xs", item.color)}>
+                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xs", item.color)}>
                       {item.icon}
                     </div>
-                    <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">{item.label}</span>
+                    <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">{item.label}</span>
                   </div>
-                  <span className="font-black text-white text-lg">{item.value}</span>
+                  <span className="font-bold text-slate-900 text-lg">{item.value}</span>
                 </div>
               ))}
             </div>
           </section>
         </div>
 
-        {/* Unit Prices - Futuristic Sliders */}
+        {/* Unit Prices - Sliders */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
-          <section className="lg:col-span-2 card-futuristic p-10">
-            <h4 className="font-black text-white mb-10 flex items-center gap-3 uppercase tracking-[0.2em] text-xs">
-              <TrendingUp size={20} className="text-sky-400" /> Visualisation des Flux Financiers
+          <section className="lg:col-span-2 glass-panel p-10">
+            <h4 className="font-display font-bold text-slate-900 mb-10 flex items-center gap-3 uppercase tracking-wider text-xs">
+              <TrendingUp size={20} className="text-teal-600" /> Flux Financiers
             </h4>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={[
-                  { name: 'Investissement', value: totals.totalInvestment, fill: '#be123c' },
-                  { name: 'Chiffre d\'Affaires', value: totals.totalRevenue, fill: '#0ea5e3' },
+                  { name: 'Investissement', value: totals.totalInvestment, fill: '#0f172a' },
+                  { name: 'Chiffre d\'Affaires', value: totals.totalRevenue, fill: '#0d9488' },
                   { name: 'Bénéfice Net', value: totals.netProfit, fill: '#10b981' }
                 ]}>
                   <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                   <YAxis hide />
                   <Tooltip 
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    contentStyle={{ backgroundColor: '#0f172a', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                    cursor={{ fill: 'rgba(0,0,0,0.02)' }}
+                    contentStyle={{ backgroundColor: '#fff', borderRadius: '15px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                     formatter={(value: number) => `${value.toLocaleString()} DH`}
                   />
                   <Bar dataKey="value" radius={[10, 10, 0, 0]} barSize={60} />
@@ -596,19 +663,19 @@ export default function App() {
             </div>
           </section>
 
-          <section className="card-futuristic p-10">
-            <h4 className="font-black text-white mb-8 flex items-center gap-3 uppercase tracking-[0.2em] text-xs">
-              <Settings2 size={20} className="text-sky-400" /> Coûts Directs
+          <section className="glass-panel p-10">
+            <h4 className="font-display font-bold text-slate-900 mb-8 flex items-center gap-3 uppercase tracking-wider text-xs">
+              <Settings2 size={20} className="text-teal-600" /> Coûts Directs
             </h4>
             <div className="space-y-8">
               {[
-                { label: 'Gros Œuvre', value: state.unitPrices.grosOeuvre, key: 'grosOeuvre', min: 800, max: 1500, color: 'accent-rose-600' },
-                { label: 'Finition', value: state.unitPrices.finition, key: 'finition', min: 800, max: 2000, color: 'accent-sky-400' },
+                { label: 'Gros Œuvre', value: state.unitPrices.grosOeuvre, key: 'grosOeuvre', min: 800, max: 1500, color: 'accent-teal-600' },
+                { label: 'Finition', value: state.unitPrices.finition, key: 'finition', min: 800, max: 2000, color: 'accent-slate-900' },
               ].map((slider) => (
                 <div key={slider.key}>
                   <div className="flex justify-between mb-3">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{slider.label}</label>
-                    <span className="text-sm font-black text-white">{slider.value} DH</span>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{slider.label}</label>
+                    <span className="text-sm font-bold text-slate-900">{slider.value} DH</span>
                   </div>
                   <input 
                     type="range" min={slider.min} max={slider.max} step="10"
@@ -617,7 +684,7 @@ export default function App() {
                       ...prev, 
                       unitPrices: { ...prev.unitPrices, [slider.key]: Number(e.target.value) } 
                     }))}
-                    className={cn("w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer", slider.color)}
+                    className={cn("w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer", slider.color)}
                   />
                 </div>
               ))}

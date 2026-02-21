@@ -37,7 +37,8 @@ export interface ProjectState {
   miscFeesPercentage: number;
   miscFeesFixed: number;
   salePricePerM2: number;
-  deductionStairsPercentage: number;
-  deductionWallsPercentage: number;
+  deductionStairsM2: number;
+  deductionWallsM2: number;
   stateTaxPercentage: number;
+  connectionFees: number;
 }

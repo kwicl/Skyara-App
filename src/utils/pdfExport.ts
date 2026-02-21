@@ -8,8 +8,8 @@ export const generatePDF = (state: ProjectState, totals: any) => {
 
   // Header
   doc.setFontSize(22);
-  doc.setTextColor(159, 18, 57); // Bordeaux (Rose 700)
-  doc.text('Skyara icl - Expert Construction', 14, 22);
+  doc.setTextColor(13, 148, 136); // Teal 600
+  doc.text('Skyara icl - Expertise Immobilière', 14, 22);
   
   doc.setFontSize(10);
   doc.setTextColor(100);
@@ -41,7 +41,7 @@ export const generatePDF = (state: ProjectState, totals: any) => {
     head: [['Niveau', 'Surface', 'Gros Œuvre', 'Finition', 'Vendable', 'Revenu Est.']],
     body: tableRows,
     theme: 'striped',
-    headStyles: { fillColor: [159, 18, 57] }
+    headStyles: { fillColor: [13, 148, 136] }
   });
 
   const finalY = (doc as any).lastAutoTable.finalY || 150;
@@ -54,11 +54,11 @@ export const generatePDF = (state: ProjectState, totals: any) => {
   doc.setFontSize(11);
   doc.text(`Coût Terrain: ${totals.landCost.toLocaleString()} DH`, 14, finalY + 25);
   doc.text(`Frais Notaire: ${state.notaryFees.toLocaleString()} DH`, 14, finalY + 32);
-  doc.text(`Frais Divers (Fixe): ${state.miscFeesFixed.toLocaleString()} DH`, 14, finalY + 39);
-  doc.text(`Frais Divers (${state.miscFeesPercentage}%): ${(totals.constructionCost * state.miscFeesPercentage / 100).toLocaleString()} DH`, 14, finalY + 46);
+  doc.text(`Raccordements: ${state.connectionFees.toLocaleString()} DH`, 14, finalY + 39);
+  doc.text(`Frais Divers (Fixe): ${state.miscFeesFixed.toLocaleString()} DH`, 14, finalY + 46);
   
   doc.setFontSize(13);
-  doc.setTextColor(14, 165, 233); // Sky Blue
+  doc.setTextColor(13, 148, 136); // Teal
   doc.text(`INVESTISSEMENT TOTAL: ${totals.totalInvestment.toLocaleString()} DH`, 14, finalY + 58);
   doc.text(`CHIFFRE D'AFFAIRES: ${totals.totalRevenue.toLocaleString()} DH`, 14, finalY + 66);
   
@@ -68,7 +68,7 @@ export const generatePDF = (state: ProjectState, totals: any) => {
   doc.text(`Taxe État (${state.stateTaxPercentage}%): ${totals.stateTax.toLocaleString()} DH`, 14, finalY + 81);
 
   doc.setFontSize(16);
-  doc.setTextColor(159, 18, 57); // Bordeaux
+  doc.setTextColor(13, 148, 136); // Teal
   doc.text(`BÉNÉFICE NET: ${totals.netProfit.toLocaleString()} DH`, 14, finalY + 94);
   
   doc.setFontSize(10);
