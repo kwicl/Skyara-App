@@ -23,7 +23,8 @@ export const INITIAL_LEVELS = [
   { id: 'foundation', type: 'FOUNDATION', name: 'Fondations' },
   { id: 'rdc', type: 'RDC', name: 'Rez-de-chaussée' },
   { id: 'floor1', type: 'FLOOR', name: '1er Étage' },
-  { id: 'floor2', type: 'FLOOR', name: '2ème Étage' }
+  { id: 'floor2', type: 'FLOOR', name: '2ème Étage' },
+  { id: 'terrasse', type: 'FLOOR', name: 'Terrasse' }
 ];
 
 export const DEFAULT_INVESTMENT = {
@@ -34,5 +35,5 @@ export const DEFAULT_INVESTMENT = {
   STAIRS_DEDUCTION_M2: 12,
   WALLS_DEDUCTION_M2: 8,
   STATE_TAX: 20,
-  CONNECTION_FEES: 17000
+  CONNECTION_FEES: 15000
 };
