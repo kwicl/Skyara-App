@@ -40,5 +40,4 @@ export interface ProjectState {
   deductionStairsM2: number;
   deductionWallsM2: number;
   stateTaxPercentage: number;
-  connectionFees: number;
 }

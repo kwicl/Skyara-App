@@ -74,7 +74,6 @@ export default function App() {
     deductionStairsM2: DEFAULT_INVESTMENT.STAIRS_DEDUCTION_M2,
     deductionWallsM2: DEFAULT_INVESTMENT.WALLS_DEDUCTION_M2,
     stateTaxPercentage: DEFAULT_INVESTMENT.STATE_TAX,
-    connectionFees: DEFAULT_INVESTMENT.CONNECTION_FEES,
   });
 
   // Recalculate surfaces based on rules
@@ -105,31 +104,34 @@ export default function App() {
 
     calculatedLevels.forEach(level => {
       if (level.type === LevelType.FOUNDATION) {
-        // Based on 50,060 DH for 100m2
-        grosOeuvre += state.terrainArea * 500.6;
-      } else if (level.name.includes('RDC')) {
+        // Based on 53,620 DH for 100m2
+        grosOeuvre += state.terrainArea * 536.2;
+      } else if (level.type === LevelType.RDC) {
         // Based on 92,460 Gros + 96,400 Finition for 100m2
         grosOeuvre += state.terrainArea * 924.6;
         finition += state.terrainArea * 964;
         totalSurface += level.surface;
-        totalSellableSurface += (level as any).sellableSurface;
-      } else if (level.name.includes('Étage')) {
-        // Based on 96,600 Gros + 99,200 Finition for 100m2
-        grosOeuvre += state.terrainArea * 966;
-        finition += state.terrainArea * 992;
-        totalSurface += level.surface;
-        totalSellableSurface += (level as any).sellableSurface;
-      } else if (level.name.includes('Terrasse')) {
-        // Based on 31,380 Gros + 27,000 Finition for 100m2
-        grosOeuvre += state.terrainArea * 313.8;
-        finition += state.terrainArea * 270;
+      } else if (level.type === LevelType.FLOOR) {
+        if (level.name.includes('Terrasse')) {
+          // Based on 31,380 Gros + 27,000 Finition for 100m2
+          grosOeuvre += state.terrainArea * 313.8;
+          finition += state.terrainArea * 270;
+        } else {
+          // Based on 96,600 Gros + 99,200 Finition for 100m2
+          grosOeuvre += state.terrainArea * 966;
+          finition += state.terrainArea * 992;
+          totalSurface += level.surface;
+        }
       }
+      
+      // Sum all sellable surfaces for revenue
+      totalSellableSurface += (level as any).sellableSurface || 0;
     });
 
     const constructionCost = grosOeuvre + finition;
     const landCost = state.terrainArea * state.landPricePerM2;
     const miscFeesPercentValue = constructionCost * (state.miscFeesPercentage / 100);
-    const totalInvestment = landCost + state.notaryFees + constructionCost + miscFeesPercentValue + state.miscFeesFixed + state.connectionFees;
+    const totalInvestment = landCost + state.notaryFees + constructionCost + miscFeesPercentValue + state.miscFeesFixed;
     
     const totalRevenue = totalSellableSurface * state.salePricePerM2;
     const grossProfit = totalRevenue - totalInvestment;
@@ -275,6 +277,35 @@ export default function App() {
 
           <section>
             <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-teal-500" /> Structure Projet
+            </h3>
+            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-bold text-slate-700 uppercase">Nombre d'Étages</span>
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={removeLevel}
+                    className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-colors shadow-sm"
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <span className="font-display font-bold text-slate-900 w-4 text-center">
+                    {state.levels.filter(l => l.type === LevelType.FLOOR).length}
+                  </span>
+                  <button 
+                    onClick={addLevel}
+                    className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-teal-500 hover:border-teal-200 transition-colors shadow-sm"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-400 italic">Configurez le nombre d'étages de votre projet R+2.</p>
+            </div>
+          </section>
+
+          <section>
+            <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-teal-500" /> Vente & Fiscalité
             </h3>
             <div className="space-y-6">
@@ -287,25 +318,14 @@ export default function App() {
                   className="input-field border-teal-200 focus:border-teal-500"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Taxe État %</label>
-                  <input 
-                    type="number" 
-                    value={state.stateTaxPercentage} 
-                    onChange={(e) => setState(prev => ({ ...prev, stateTaxPercentage: Number(e.target.value) }))}
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Raccord. (DH)</label>
-                  <input 
-                    type="number" 
-                    value={state.connectionFees} 
-                    onChange={(e) => setState(prev => ({ ...prev, connectionFees: Number(e.target.value) }))}
-                    className="input-field"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Taxe État %</label>
+                <input 
+                  type="number" 
+                  value={state.stateTaxPercentage} 
+                  onChange={(e) => setState(prev => ({ ...prev, stateTaxPercentage: Number(e.target.value) }))}
+                  className="input-field"
+                />
               </div>
             </div>
           </section>
@@ -365,13 +385,6 @@ export default function App() {
               </div>
             </div>
           </section>
-
-          <button 
-            onClick={handleQuickSimulation}
-            className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-3 shadow-lg shadow-slate-200"
-          >
-            <TrendingUp size={20} /> Simulation 120m²
-          </button>
         </div>
       </aside>
 
@@ -550,7 +563,7 @@ export default function App() {
               <div className="space-y-4">
                 <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-2 flex justify-between items-center">
                   <span>1. Fondations</span>
-                  <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 500.6).toLocaleString()} DH</span>
+                  <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 536.2).toLocaleString()} DH</span>
                 </h5>
                 <ul className="text-xs space-y-2 text-slate-600">
                   <li className="flex justify-between"><span>Main d'œuvre (120 DH/m²)</span> <span className="font-bold">{Math.round(state.terrainArea * 120).toLocaleString()} DH</span></li>
@@ -559,7 +572,8 @@ export default function App() {
                   <li className="flex justify-between"><span>Sable de mer (0.22 m³/m²)</span> <span className="font-bold">{Math.round(state.terrainArea * 60).toLocaleString()} DH</span></li>
                   <li className="flex justify-between"><span>Ciment (1.5 sacs/m²)</span> <span className="font-bold">{Math.round(state.terrainArea * 123).toLocaleString()} DH</span></li>
                   <li className="flex justify-between"><span>Fer (6, 10, 12 mm)</span> <span className="font-bold">{Math.round(state.terrainArea * 105.6).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Évacuation (PVC 200)</span> <span className="font-bold">{Math.round(state.terrainArea * 50.6).toLocaleString()} DH</span></li>
+                  <li className="flex justify-between"><span>Fil de fer et clous</span> <span className="font-bold">{Math.round(state.terrainArea * 12).toLocaleString()} DH</span></li>
+                  <li className="flex justify-between"><span>Tuyaux (PVC 200)</span> <span className="font-bold">{Math.round(state.terrainArea * 50.6).toLocaleString()} DH</span></li>
                 </ul>
               </div>
 
@@ -583,30 +597,26 @@ export default function App() {
               <div className="space-y-4">
                 <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-2 flex justify-between items-center">
                   <span>3. Étages (1er & 2ème)</span>
-                  <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 1958 * 2).toLocaleString()} DH</span>
+                  <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 1958 * state.levels.filter(l => l.name.includes('Étage')).length).toLocaleString()} DH</span>
                 </h5>
                 <ul className="text-xs space-y-2 text-slate-600">
                   <li className="flex justify-between text-teal-600 font-semibold"><span>Gros Œuvre / Étage</span> <span>{Math.round(state.terrainArea * 966).toLocaleString()} DH</span></li>
                   <li className="flex justify-between pl-2"><span>• Structure & Briques</span> <span>{Math.round(state.terrainArea * 966).toLocaleString()} DH</span></li>
                   <li className="flex justify-between text-emerald-600 font-semibold"><span>Finitions / Étage</span> <span>{Math.round(state.terrainArea * 992).toLocaleString()} DH</span></li>
                   <li className="flex justify-between pl-2"><span>• Chambres & Salons</span> <span>{Math.round(state.terrainArea * 992).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between border-t pt-2 italic text-slate-400">
-                    <span>Note: Surface maintenue via balcons</span>
-                  </li>
                 </ul>
               </div>
 
               <div className="space-y-4">
                 <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-2 flex justify-between items-center">
                   <span>4. Terrasse & Toiture</span>
-                  <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 583.8 + 15000).toLocaleString()} DH</span>
+                  <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 583.8).toLocaleString()} DH</span>
                 </h5>
                 <ul className="text-xs space-y-2 text-slate-600">
                   <li className="flex justify-between"><span>Gros Œuvre (Cage/Murs)</span> <span className="font-bold">{Math.round(state.terrainArea * 313.8).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Carrelage (1.1x surf.)</span> <span className="font-bold">{Math.round(state.terrainArea * 165).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Peinture "Crêpi"</span> <span className="font-bold">{Math.round(state.terrainArea * 80).toLocaleString()} DH</span></li>
+                  <li className="flex justify-between"><span>Carrelage Terrasse</span> <span className="font-bold">{Math.round(state.terrainArea * 165).toLocaleString()} DH</span></li>
+                  <li className="flex justify-between"><span>Peinture Façade</span> <span className="font-bold">{Math.round(state.terrainArea * 80).toLocaleString()} DH</span></li>
                   <li className="flex justify-between"><span>Ferronnerie Porte</span> <span className="font-bold">{Math.round(state.terrainArea * 25).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between text-amber-600 font-semibold"><span>Raccordements</span> <span>{state.connectionFees.toLocaleString()} DH</span></li>
                 </ul>
               </div>
             </div>
@@ -617,10 +627,10 @@ export default function App() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={[
-                      { name: 'Fond.', val: Math.round(state.terrainArea * 500.6) },
+                      { name: 'Fond.', val: Math.round(state.terrainArea * 536.2) },
                       { name: 'RDC', val: Math.round(state.terrainArea * 1888.6) },
                       { name: 'Étages', val: Math.round(state.terrainArea * 1958 * state.levels.filter(l => l.name.includes('Étage')).length) },
-                      { name: 'Terr.', val: Math.round(state.terrainArea * 583.8 + state.connectionFees) },
+                      { name: 'Terr.', val: Math.round(state.terrainArea * 583.8) },
                     ]}
                     margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                   >

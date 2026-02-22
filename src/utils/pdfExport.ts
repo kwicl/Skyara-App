@@ -54,22 +54,21 @@ export const generatePDF = (state: ProjectState, totals: any) => {
   doc.setFontSize(11);
   doc.text(`Coût Terrain: ${totals.landCost.toLocaleString()} DH`, 14, finalY + 25);
   doc.text(`Frais Notaire: ${state.notaryFees.toLocaleString()} DH`, 14, finalY + 32);
-  doc.text(`Raccordements: ${state.connectionFees.toLocaleString()} DH`, 14, finalY + 39);
-  doc.text(`Frais Divers (Fixe): ${state.miscFeesFixed.toLocaleString()} DH`, 14, finalY + 46);
+  doc.text(`Frais Divers (Fixe): ${state.miscFeesFixed.toLocaleString()} DH`, 14, finalY + 39);
   
   doc.setFontSize(13);
   doc.setTextColor(13, 148, 136); // Teal
-  doc.text(`INVESTISSEMENT TOTAL: ${totals.totalInvestment.toLocaleString()} DH`, 14, finalY + 58);
-  doc.text(`CHIFFRE D'AFFAIRES: ${totals.totalRevenue.toLocaleString()} DH`, 14, finalY + 66);
+  doc.text(`INVESTISSEMENT TOTAL: ${totals.totalInvestment.toLocaleString()} DH`, 14, finalY + 50);
+  doc.text(`CHIFFRE D'AFFAIRES: ${totals.totalRevenue.toLocaleString()} DH`, 14, finalY + 58);
   
   doc.setFontSize(11);
   doc.setTextColor(100);
-  doc.text(`Bénéfice Brut: ${totals.grossProfit.toLocaleString()} DH`, 14, finalY + 74);
-  doc.text(`Taxe État (${state.stateTaxPercentage}%): ${totals.stateTax.toLocaleString()} DH`, 14, finalY + 81);
+  doc.text(`Bénéfice Brut: ${totals.grossProfit.toLocaleString()} DH`, 14, finalY + 66);
+  doc.text(`Taxe État (${state.stateTaxPercentage}%): ${totals.stateTax.toLocaleString()} DH`, 14, finalY + 73);
 
   doc.setFontSize(16);
   doc.setTextColor(13, 148, 136); // Teal
-  doc.text(`BÉNÉFICE NET: ${totals.netProfit.toLocaleString()} DH`, 14, finalY + 94);
+  doc.text(`BÉNÉFICE NET: ${totals.netProfit.toLocaleString()} DH`, 14, finalY + 86);
   
   doc.setFontSize(10);
   doc.setTextColor(150);
