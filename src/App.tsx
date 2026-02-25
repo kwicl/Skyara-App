@@ -74,6 +74,7 @@ export default function App() {
     deductionStairsM2: DEFAULT_INVESTMENT.STAIRS_DEDUCTION_M2,
     deductionWallsM2: DEFAULT_INVESTMENT.WALLS_DEDUCTION_M2,
     stateTaxPercentage: DEFAULT_INVESTMENT.STATE_TAX,
+    encorbellementM2: SURFACE_RULES.ENCORBELLEMENT,
   });
 
   // Recalculate surfaces based on rules
@@ -85,7 +86,7 @@ export default function App() {
       if (level.type === LevelType.RDC) {
         surface = state.terrainArea - deduction;
       } else if (level.type === LevelType.FLOOR) {
-        surface = (state.terrainArea - deduction) + SURFACE_RULES.ENCORBELLEMENT;
+        surface = (state.terrainArea - deduction) + state.encorbellementM2;
       } else if (level.type === LevelType.SOUS_SOL) {
         surface = state.terrainArea;
       }
@@ -94,7 +95,7 @@ export default function App() {
 
       return { ...level, surface, sellableSurface };
     });
-  }, [state.terrainArea, state.facades, state.levels, state.deductionStairsM2, state.deductionWallsM2]);
+  }, [state.terrainArea, state.facades, state.levels, state.deductionStairsM2, state.deductionWallsM2, state.encorbellementM2]);
 
   const totals = useMemo(() => {
     let grosOeuvre = 0;
@@ -354,6 +355,15 @@ export default function App() {
                     className="input-field"
                   />
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase">Encorbellement (m²)</label>
+                <input 
+                  type="number" step="0.1"
+                  value={state.encorbellementM2} 
+                  onChange={(e) => setState(prev => ({ ...prev, encorbellementM2: Number(e.target.value) }))}
+                  className="input-field border-teal-100 focus:border-teal-500"
+                />
               </div>
             </div>
           </section>
