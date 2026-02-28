@@ -20,13 +20,11 @@ import {
   Briefcase,
   Percent,
   Calculator,
-  ArrowRightLeft
+  ArrowRightLeft,
+  PieChart as PieChartIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  PieChart, 
-  Pie, 
-  Cell, 
   ResponsiveContainer, 
   BarChart, 
   Bar, 
@@ -34,7 +32,10 @@ import {
   YAxis, 
   Tooltip, 
   Legend,
-  CartesianGrid
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
 import { Level, LevelType, ProjectState } from './types';
 import { DETAILED_COSTS_REF, DEFAULT_PRICES, SURFACE_RULES, DEFAULT_INVESTMENT } from './constants';
@@ -46,8 +47,6 @@ import { twMerge } from 'tailwind-merge';
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-const CHART_COLORS = ['#0d9488', '#0ea5e9', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e', '#f59e0b'];
 
 export default function App() {
   const [state, setState] = useState<ProjectState>({
@@ -144,16 +143,28 @@ export default function App() {
     const netProfit = grossProfit - stateTax;
     const marginPercentage = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
-    const technicalData = Object.entries(allCategories).map(([name, value]) => ({
-      name,
-      value: Math.round(value)
-    })).sort((a, b) => b.value - a.value);
-
     // Material Estimations (Standard Moroccan R+2 Ratios)
     const estSteel = totalSurface * 38; // ~38kg/m2
     const estCement = totalSurface * 3.2; // ~3.2 bags/m2
     const estBricks = totalSurface * 48; // ~48 units/m2
     const estConcrete = totalSurface * 0.32; // ~0.32 m3/m2
+
+    const numEtages = state.levels.filter(l => l.type === LevelType.FLOOR && l.name.includes('Étage')).length;
+
+    const totalMO = (
+      (DETAILED_COSTS_REF.FOUNDATION.MO + 
+       DETAILED_COSTS_REF.RDC.GROS_OEUVRE.MO + 
+       (DETAILED_COSTS_REF.RDC.FINITION.PLATRE * 0.4) + 
+       (DETAILED_COSTS_REF.RDC.FINITION.ZELLIGE * 0.4) + 
+       (DETAILED_COSTS_REF.RDC.FINITION.PEINTURE * 0.5)) +
+      (DETAILED_COSTS_REF.FLOOR.GROS_OEUVRE.MO + 
+       (DETAILED_COSTS_REF.FLOOR.FINITION.PLATRE * 0.4) + 
+       (DETAILED_COSTS_REF.FLOOR.FINITION.ZELLIGE * 0.4) + 
+       (DETAILED_COSTS_REF.FLOOR.FINITION.PEINTURE * 0.5)) * numEtages +
+      (DETAILED_COSTS_REF.TERRASSE.GROS_OEUVRE.MO)
+    ) * (state.terrainArea / 100);
+
+    const totalMaterials = constructionCost - totalMO - DETAILED_COSTS_REF.RACCORDEMENT_FIXED;
 
     return {
       grosOeuvre,
@@ -168,11 +179,12 @@ export default function App() {
       marginPercentage,
       totalSurface,
       totalSellableSurface,
-      technicalData,
       estSteel,
       estCement,
       estBricks,
       estConcrete,
+      totalMO,
+      totalMaterials,
       maxAllowedSurface: state.terrainArea * state.cos,
       isOverCOS: totalSurface > (state.terrainArea * state.cos)
     };
@@ -224,11 +236,13 @@ export default function App() {
       <aside className="w-full lg:w-96 bg-white border-r border-slate-200 flex flex-col overflow-y-auto lg:h-screen safe-pt">
         <div className="p-8 border-b border-slate-100 flex items-center justify-between lg:block">
           <div className="flex items-center gap-5">
-            <div className="w-14 h-14 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-600 shadow-sm border border-teal-100 overflow-hidden">
-              <Building2 size={32} />
+            <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-slate-200 overflow-hidden relative group">
+              <Building2 size={32} className="relative z-10" />
+              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-slate-900 to-slate-800 opacity-50" />
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-white/10 rounded-full blur-xl group-hover:bg-white/20 transition-all" />
             </div>
             <div>
-              <h1 className="font-display font-bold text-2xl tracking-tight text-slate-900">Skyara <span className="text-teal-600">icl</span></h1>
+              <h1 className="font-display font-bold text-2xl tracking-tight text-slate-900 leading-tight">SkyHigh <span className="text-[#800020]">icl</span></h1>
               <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Expertise Immobilière</p>
             </div>
           </div>
@@ -432,7 +446,7 @@ export default function App() {
               </div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Investissement</p>
             </div>
-            <h3 className="text-3xl font-bold text-slate-900">{(totals.totalInvestment / 10000).toFixed(1)} <span className="text-sm font-medium text-slate-400">M Cts</span></h3>
+            <h3 className="text-3xl font-bold text-[#800020]">{(totals.totalInvestment / 10000).toFixed(1)} <span className="text-sm font-medium text-slate-400">M Cts</span></h3>
             <div className="mt-3 flex flex-col gap-1">
               <p className="text-[11px] font-bold text-teal-600">{totals.totalInvestment.toLocaleString()} DH</p>
               <p className="text-[9px] text-slate-400 font-medium">Terrain: {totals.landCost.toLocaleString()} DH</p>
@@ -446,7 +460,7 @@ export default function App() {
               </div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chiffre d'Affaires</p>
             </div>
-            <h3 className="text-3xl font-bold text-slate-900">{(totals.totalRevenue / 10000).toFixed(1)} <span className="text-sm font-medium text-slate-400">M Cts</span></h3>
+            <h3 className="text-3xl font-bold text-[#800020]">{(totals.totalRevenue / 10000).toFixed(1)} <span className="text-sm font-medium text-slate-400">M Cts</span></h3>
             <p className="text-[11px] font-bold text-slate-600 mt-3">{totals.totalRevenue.toLocaleString()} DH</p>
           </motion.div>
 
@@ -460,7 +474,7 @@ export default function App() {
               </div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bénéfice Net</p>
             </div>
-            <h3 className="text-3xl font-bold text-slate-900">{(totals.netProfit / 10000).toFixed(1)} <span className="text-sm font-medium text-slate-400">M Cts</span></h3>
+            <h3 className="text-3xl font-bold text-[#800020]">{(totals.netProfit / 10000).toFixed(1)} <span className="text-sm font-medium text-slate-400">M Cts</span></h3>
             <p className="text-[11px] font-bold text-teal-600 mt-3">Taxe: {totals.stateTax.toLocaleString()} DH</p>
           </motion.div>
 
@@ -471,7 +485,7 @@ export default function App() {
               </div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ROI Net</p>
             </div>
-            <h3 className="text-3xl font-bold text-slate-900">{((totals.netProfit / totals.totalInvestment) * 100).toFixed(1)} <span className="text-sm font-medium text-slate-400">%</span></h3>
+            <h3 className="text-3xl font-bold text-[#800020]">{((totals.netProfit / totals.totalInvestment) * 100).toFixed(1)} <span className="text-sm font-medium text-slate-400">%</span></h3>
             <div className="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-teal-600 rounded-full"
@@ -532,7 +546,7 @@ export default function App() {
           <div className="space-y-10">
             <section className="glass-panel p-10">
               <h4 className="font-display font-bold text-slate-900 mb-10 flex items-center gap-3 uppercase tracking-wider text-xs">
-                <PieChart size={20} className="text-teal-600" /> Répartition Capital
+                <PieChartIcon size={20} className="text-teal-600" /> Répartition Capital
               </h4>
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -578,143 +592,97 @@ export default function App() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-2 flex justify-between items-center">
-                  <span>1. Fondations</span>
-                  <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 500.6).toLocaleString()} DH</span>
-                </h5>
-                <ul className="text-xs space-y-2 text-slate-600">
-                  <li className="flex justify-between"><span>Main d'œuvre (120 DH/m²)</span> <span className="font-bold">{Math.round(state.terrainArea * 120).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Pierres (Gros & Fin)</span> <span className="font-bold">{Math.round(state.terrainArea * 30).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Gravier (0.25 m³/m²)</span> <span className="font-bold">{Math.round(state.terrainArea * 35).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Sable de mer (0.22 m³/m²)</span> <span className="font-bold">{Math.round(state.terrainArea * 60).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Ciment (1.5 sacs/m²)</span> <span className="font-bold">{Math.round(state.terrainArea * 123).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Fer (6, 10, 12 mm)</span> <span className="font-bold">{Math.round(state.terrainArea * 105.6).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Fil de fer et clous</span> <span className="font-bold">{Math.round(state.terrainArea * 12).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Tuyaux (PVC 200)</span> <span className="font-bold">{Math.round(state.terrainArea * 15).toLocaleString()} DH</span></li>
-                </ul>
-              </div>
+          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="space-y-4 bg-white rounded-3xl p-8 border border-slate-100">
+              <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-3 flex justify-between items-center">
+                <span>1. Fondations (الأساسات)</span>
+                <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 500.6).toLocaleString()} DH</span>
+              </h5>
+              <ul className="text-xs space-y-3 text-slate-600">
+                <li className="flex justify-between"><span>Main d'œuvre (اليد العاملة)</span> <span className="font-bold">{Math.round(state.terrainArea * 120).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Pierres (الحجر)</span> <span className="font-bold">{Math.round(state.terrainArea * 30).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Gravier (الكياس)</span> <span className="font-bold">{Math.round(state.terrainArea * 35).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Sable (الرملة)</span> <span className="font-bold">{Math.round(state.terrainArea * 60).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Ciment 45 (السيمة)</span> <span className="font-bold">{Math.round(state.terrainArea * 123).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Fer (الحديد)</span> <span className="font-bold">{Math.round(state.terrainArea * 105.6).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Divers (PVC, Clous...)</span> <span className="font-bold">{Math.round(state.terrainArea * 27).toLocaleString()} DH</span></li>
+              </ul>
+            </div>
 
-              <div className="space-y-4">
-                <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-2 flex justify-between items-center">
-                  <span>2. Rez-de-chaussée (RDC)</span>
-                  <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 1888.6).toLocaleString()} DH</span>
-                </h5>
-                <ul className="text-xs space-y-2 text-slate-600">
-                  <li className="flex justify-between text-teal-600 font-semibold"><span>Gros Œuvre RDC</span> <span>{Math.round(state.terrainArea * 924.6).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between pl-2"><span>• Main d'œuvre</span> <span>{Math.round(state.terrainArea * 240).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between pl-2"><span>• Briques (12 & 8)</span> <span>{Math.round(state.terrainArea * 123.2).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between pl-2"><span>• Ciment (C35/C45)</span> <span>{Math.round(state.terrainArea * 160.8).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between text-emerald-600 font-semibold"><span>Finitions RDC</span> <span>{Math.round(state.terrainArea * 964).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between pl-2"><span>• Plâtre & Carrelage</span> <span>{Math.round(state.terrainArea * 299).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between pl-2"><span>• Cuisine & Placards</span> <span>{Math.round(state.terrainArea * 150).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between pl-2"><span>• Menuiserie & Alu</span> <span>{Math.round(state.terrainArea * 185).toLocaleString()} DH</span></li>
-                </ul>
-              </div>
+            <div className="space-y-4 bg-white rounded-3xl p-8 border border-slate-100">
+              <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-3 flex justify-between items-center">
+                <span>2. Rez-de-chaussée (الطابق السفلي)</span>
+                <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 1888.6).toLocaleString()} DH</span>
+              </h5>
+              <ul className="text-xs space-y-3 text-slate-600">
+                <li className="flex justify-between text-teal-600 font-semibold"><span>Gros Œuvre (البناء)</span> <span>{Math.round(state.terrainArea * 924.6).toLocaleString()} DH</span></li>
+                <li className="flex justify-between pl-2"><span>• Main d'œuvre</span> <span>{Math.round(state.terrainArea * 240).toLocaleString()} DH</span></li>
+                <li className="flex justify-between pl-2"><span>• Briques (12 & 8)</span> <span>{Math.round(state.terrainArea * 123.2).toLocaleString()} DH</span></li>
+                <li className="flex justify-between pl-2"><span>• Ciment (35 & 45)</span> <span>{Math.round(state.terrainArea * 160.8).toLocaleString()} DH</span></li>
+                <li className="flex justify-between pl-2"><span>• Fer (6, 10, 12 mm)</span> <span>{Math.round(state.terrainArea * 105.6).toLocaleString()} DH</span></li>
+                <li className="flex justify-between text-emerald-600 font-semibold"><span>Finitions (الإصلاح)</span> <span>{Math.round(state.terrainArea * 964).toLocaleString()} DH</span></li>
+                <li className="flex justify-between pl-2"><span>• Plâtre & Carrelage</span> <span>{Math.round(state.terrainArea * 299).toLocaleString()} DH</span></li>
+                <li className="flex justify-between pl-2"><span>• Cuisine & Menuiserie</span> <span>{Math.round(state.terrainArea * 330).toLocaleString()} DH</span></li>
+              </ul>
+            </div>
 
-              <div className="space-y-4">
-                <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-2 flex justify-between items-center">
-                  <span>3. Étages (1er & 2ème)</span>
-                  <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 1958 * state.levels.filter(l => l.name.includes('Étage')).length).toLocaleString()} DH</span>
-                </h5>
-                <ul className="text-xs space-y-2 text-slate-600">
-                  <li className="flex justify-between text-teal-600 font-semibold"><span>Gros Œuvre / Étage</span> <span>{Math.round(state.terrainArea * 966).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between pl-2"><span>• Structure & Briques</span> <span>{Math.round(state.terrainArea * 966).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between text-emerald-600 font-semibold"><span>Finitions / Étage</span> <span>{Math.round(state.terrainArea * 992).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between pl-2"><span>• Chambres & Salons</span> <span>{Math.round(state.terrainArea * 992).toLocaleString()} DH</span></li>
-                </ul>
-              </div>
+            <div className="space-y-4 bg-white rounded-3xl p-8 border border-slate-100">
+              <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-3 flex justify-between items-center">
+                <span>3. Étages (الطوابق العلوي)</span>
+                <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 1958 * state.levels.filter(l => l.name.includes('Étage')).length).toLocaleString()} DH</span>
+              </h5>
+              <ul className="text-xs space-y-3 text-slate-600">
+                <li className="flex justify-between text-teal-600 font-semibold"><span>Gros Œuvre / Étage</span> <span>{Math.round(state.terrainArea * 966).toLocaleString()} DH</span></li>
+                <li className="flex justify-between pl-2"><span>• Structure & Briques</span> <span>{Math.round(state.terrainArea * 966).toLocaleString()} DH</span></li>
+                <li className="flex justify-between text-emerald-600 font-semibold"><span>Finitions / Étage</span> <span>{Math.round(state.terrainArea * 992).toLocaleString()} DH</span></li>
+                <li className="flex justify-between pl-2"><span>• Chambres & Salons</span> <span>{Math.round(state.terrainArea * 992).toLocaleString()} DH</span></li>
+              </ul>
+            </div>
 
-              <div className="space-y-4">
-                <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-2 flex justify-between items-center">
-                  <span>4. Terrasse & Toiture</span>
-                  <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 583.8).toLocaleString()} DH</span>
-                </h5>
-                <ul className="text-xs space-y-2 text-slate-600">
-                  <li className="flex justify-between"><span>Gros Œuvre (Cage/Murs)</span> <span className="font-bold">{Math.round(state.terrainArea * 313.8).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Carrelage Terrasse</span> <span className="font-bold">{Math.round(state.terrainArea * 165).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Peinture Façade</span> <span className="font-bold">{Math.round(state.terrainArea * 80).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Ferronnerie Porte</span> <span className="font-bold">{Math.round(state.terrainArea * 25).toLocaleString()} DH</span></li>
-                </ul>
+            <div className="space-y-4 bg-white rounded-3xl p-8 border border-slate-100">
+              <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-3 flex justify-between items-center">
+                <span>4. Terrasse (السطح)</span>
+                <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 583.8).toLocaleString()} DH</span>
+              </h5>
+              <ul className="text-xs space-y-3 text-slate-600">
+                <li className="flex justify-between"><span>Gros Œuvre (البناء)</span> <span className="font-bold">{Math.round(state.terrainArea * 313.8).toLocaleString()} DH</span></li>
+                <li className="flex justify-between"><span>Finition (الاصلاح)</span> <span className="font-bold">{Math.round(state.terrainArea * 270).toLocaleString()} DH</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-12">
+            <div className="lg:col-span-2 bg-slate-50 rounded-[2rem] p-10 border border-slate-100">
+              <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">Récapitulatif Global par Poste</h5>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="p-6 bg-white rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Main d'œuvre (اليد العاملة)</p>
+                  <p className="text-2xl font-bold text-teal-600">{Math.round(totals.totalMO).toLocaleString()} DH</p>
+                </div>
+                <div className="p-6 bg-white rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Matériaux (السلعة)</p>
+                  <p className="text-2xl font-bold text-teal-600">{Math.round(totals.totalMaterials).toLocaleString()} DH</p>
+                </div>
+                <div className="p-6 bg-white rounded-2xl border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Raccordements (المصاريف)</p>
+                  <p className="text-2xl font-bold text-teal-600">15,000 DH</p>
+                </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100">
-              <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Répartition des Charges</h5>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={[
-                      { name: 'Fond.', val: Math.round(state.terrainArea * 536.2) },
-                      { name: 'RDC', val: Math.round(state.terrainArea * 1888.6) },
-                      { name: 'Étages', val: Math.round(state.terrainArea * 1958 * state.levels.filter(l => l.name.includes('Étage')).length) },
-                      { name: 'Terr.', val: Math.round(state.terrainArea * 583.8) },
-                    ]}
-                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                    <Tooltip 
-                      cursor={{ fill: '#f1f5f9' }}
-                      contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                      formatter={(value: number) => [`${value.toLocaleString()} DH`, 'Coût']}
-                    />
-                    <Bar dataKey="val" fill="#0d9488" radius={[6, 6, 0, 0]} barSize={30} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-6">
-                <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Répartition Technique (%)</h5>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={totals.technicalData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={60}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {totals.technicalData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#fff', borderRadius: '15px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value: number) => `${value.toLocaleString()} DH`}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+            <div className="bg-slate-900 rounded-[2rem] p-10 text-white flex flex-col justify-center">
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-xs uppercase tracking-widest">Gros Œuvre (البناء)</span>
+                  <span className="font-bold text-xl">{totals.grosOeuvre.toLocaleString()} DH</span>
                 </div>
-                <div className="mt-2 space-y-2">
-                  {totals.technicalData.slice(0, 4).map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-center text-[10px]">
-                      <span className="text-slate-500 flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }} />
-                        {item.name}
-                      </span>
-                      <span className="font-bold text-slate-700">{Math.round((item.value / totals.constructionCost) * 100)}%</span>
-                    </div>
-                  ))}
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-xs uppercase tracking-widest">Finition (الاصلاح)</span>
+                  <span className="font-bold text-xl">{totals.finition.toLocaleString()} DH</span>
                 </div>
-              </div>
-              <div className="mt-8 space-y-3">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-500">Gros Œuvre Total</span>
-                  <span className="font-bold text-slate-900">{totals.grosOeuvre.toLocaleString()} DH</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-500">Finitions Total</span>
-                  <span className="font-bold text-slate-900">{totals.finition.toLocaleString()} DH</span>
-                </div>
-                <div className="pt-3 border-t border-slate-200 flex justify-between items-center text-sm">
-                  <span className="font-bold text-slate-900 uppercase tracking-tighter">Total Construction</span>
-                  <span className="font-bold text-teal-600">~{totals.constructionCost.toLocaleString()} DH</span>
+                <div className="pt-6 border-t border-white/10 flex justify-between items-center">
+                  <span className="font-bold text-teal-400 uppercase tracking-tighter text-lg">Grand Total Estimé</span>
+                  <span className="font-bold text-2xl text-white">~{totals.constructionCost.toLocaleString()} DH</span>
                 </div>
               </div>
             </div>
@@ -844,6 +812,197 @@ export default function App() {
             </div>
           </section>
         </div>
+
+        {/* Full Detailed Breakdown Section */}
+        <section className="glass-panel p-10 mb-12">
+          <div className="border-b border-slate-100 pb-8 mb-10">
+            <h3 className="text-2xl font-display font-bold text-slate-900 mb-2">Détails Complets de Construction</h3>
+            <p className="text-slate-500 text-sm">Analyse exhaustive basée sur un terrain de {state.terrainArea} m² (R+2)</p>
+          </div>
+
+          <div className="space-y-16">
+            {/* 1. Fondations */}
+            <div>
+              <div className="flex items-center justify-between mb-8">
+                <h4 className="text-xl font-bold text-slate-900 flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-lg bg-[#800020] text-white flex items-center justify-center text-sm">1</span>
+                  Fondations (الأساس - الفونداسيون)
+                </h4>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Coût Estimé</p>
+                  <p className="text-2xl font-bold text-[#800020]">{Math.round(50060 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[
+                  { label: "Main d'œuvre (اليد العاملة)", value: 12000, detail: "120 DH/m²" },
+                  { label: "Pierres (الحجر)", value: 3000, detail: "30 m³ + 6 m³" },
+                  { label: "Gravier (الكياس)", value: 3500, detail: "25 m³" },
+                  { label: "Sable (الرملة)", value: 6000, detail: "22 m³" },
+                  { label: "Ciment 45 (السيمة)", value: 12300, detail: "150 sacs" },
+                  { label: "Fer (الحديد)", value: 10560, detail: "6mm, 10mm, 12mm" },
+                  { label: "Fil de fer & Clous", value: 1200, detail: "80 kg" },
+                  { label: "Tuyaux d'évacuation", value: 0, detail: "Inclus dans le total" }
+                ].map((item, i) => (
+                  <div key={i} className="p-5 rounded-2xl bg-slate-50 border border-slate-100">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{item.label}</p>
+                    <div className="flex justify-between items-end">
+                      <p className="text-lg font-bold text-slate-900">{item.value > 0 ? Math.round(item.value * (state.terrainArea / 100)).toLocaleString() : "-"} <span className="text-[10px] font-medium text-slate-400">DH</span></p>
+                      <span className="text-[10px] text-slate-400 italic">{item.detail}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. RDC */}
+            <div className="pt-10 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-8">
+                <h4 className="text-xl font-bold text-slate-900 flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-lg bg-[#800020] text-white flex items-center justify-center text-sm">2</span>
+                  Rez-de-chaussée (الطابق السفلي - RDC)
+                </h4>
+                <div className="flex gap-8">
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gros Œuvre</p>
+                    <p className="text-xl font-bold text-slate-900">{Math.round(92460 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Finition</p>
+                    <p className="text-xl font-bold text-slate-900">{Math.round(96400 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total RDC</p>
+                    <p className="text-2xl font-bold text-[#800020]">{Math.round(188860 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div className="space-y-4">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Détail Gros Œuvre (البناء)</p>
+                  <div className="bg-white rounded-3xl p-6 border border-slate-100 space-y-3">
+                    {[
+                      { l: "Main d'œuvre", v: 24000, d: "240 DH/m²" },
+                      { l: "Briques (12 & 8)", v: 12320, d: "4200 unités" },
+                      { l: "Matériaux (Gravier/Sable)", v: 9500, d: "Base 100m²" },
+                      { l: "Ciment (35 & 45)", v: 16080, d: "200 sacs" },
+                      { l: "Fer (6, 10, 12 mm)", v: 10560, d: "12 quintaux" },
+                      { l: "Eau & Électricité", v: 10000, d: "Encastré" },
+                      { l: "Plancher (Hourdis)", v: 10000, d: "Poutrelles" }
+                    ].map((item, i) => (
+                      <div key={i} className="flex justify-between items-center text-sm">
+                        <span className="text-slate-600">{item.l}</span>
+                        <span className="font-bold text-slate-900">{Math.round(item.v * (state.terrainArea / 100)).toLocaleString()} DH</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Détail Finition (الإصلاح)</p>
+                  <div className="bg-white rounded-3xl p-6 border border-slate-100 space-y-3">
+                    {[
+                      { l: "Plâtre (الجبص)", v: 10400, d: "80 m²" },
+                      { l: "Carrelage (الزليج)", v: 19500, d: "130 m²" },
+                      { l: "Marbre (الرخام)", v: 11000, d: "Salons/Escaliers" },
+                      { l: "Peinture (الصباغة)", v: 8000, d: "Main d'œuvre incluse" },
+                      { l: "Aluminium & Sanitaires", v: 14500, d: "Portes/Fenêtres" },
+                      { l: "Menuiserie Bois", v: 8000, d: "4 portes" },
+                      { l: "Ferronnerie (Inox/Fer)", v: 10000, d: "Porte principale" },
+                      { l: "Cuisine & Placards", v: 15000, d: "Complet" }
+                    ].map((item, i) => (
+                      <div key={i} className="flex justify-between items-center text-sm">
+                        <span className="text-slate-600">{item.l}</span>
+                        <span className="font-bold text-slate-900">{Math.round(item.v * (state.terrainArea / 100)).toLocaleString()} DH</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Étages */}
+            <div className="pt-10 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-8">
+                <h4 className="text-xl font-bold text-slate-900 flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-lg bg-[#800020] text-white flex items-center justify-center text-sm">3</span>
+                  Étages (الطابق الأول والثاني)
+                </h4>
+                <div className="flex gap-8">
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gros Œuvre / Étage</p>
+                    <p className="text-xl font-bold text-slate-900">{Math.round(96600 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Finition / Étage</p>
+                    <p className="text-xl font-bold text-slate-900">{Math.round(99200 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total par Étage</p>
+                    <p className="text-2xl font-bold text-[#800020]">{Math.round(195800 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mb-6 italic">Note: Légère augmentation due aux balcons et projections (البروزات).</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  { l: "Briques (12 & 8)", v: 14000, d: "Plus d'unités" },
+                  { l: "Électricité/Plomberie", v: 12000, d: "Étage" },
+                  { l: "Plancher (Hourdis)", v: 11000, d: "Étage" },
+                  { l: "Plâtre (90 m²)", v: 11700, d: "Étage" },
+                  { l: "Aluminium (5 fenêtres)", v: 14000, d: "Étage" },
+                  { l: "Bois (5 portes)", v: 10000, d: "Étage" }
+                ].map((item, i) => (
+                  <div key={i} className="p-4 rounded-xl bg-white border border-slate-100">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{item.l}</p>
+                    <p className="font-bold text-slate-900">{Math.round(item.v * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Terrasse */}
+            <div className="pt-10 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-8">
+                <h4 className="text-xl font-bold text-slate-900 flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-lg bg-[#800020] text-white flex items-center justify-center text-sm">4</span>
+                  Terrasse/Toit (السطح)
+                </h4>
+                <div className="flex gap-8">
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gros Œuvre</p>
+                    <p className="text-xl font-bold text-slate-900">{Math.round(31380 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Finition</p>
+                    <p className="text-xl font-bold text-slate-900">{Math.round(27000 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Terrasse</p>
+                    <p className="text-2xl font-bold text-[#800020]">{Math.round(58380 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[
+                  { l: "Main d'œuvre", v: 10000, d: "100 DH/m²" },
+                  { l: "Briques (Acrotère)", v: 5120, d: "سترة" },
+                  { l: "Ciment 45 (50 sacs)", v: 4100, d: "Terrasse" },
+                  { l: "Fer (7 quintaux)", v: 6160, d: "Terrasse" },
+                  { l: "Sable", v: 6000, d: "Terrasse" },
+                  { l: "Carrelage (110 m²)", v: 16500, d: "Terrasse" },
+                  { l: "Peinture 'Grifi'", v: 8000, d: "Façade/Cour" },
+                  { l: "Ferronnerie", v: 2500, d: "Porte" }
+                ].map((item, i) => (
+                  <div key={i} className="flex justify-between items-center p-4 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-xs text-slate-600 font-medium">{item.l}</span>
+                    <span className="font-bold text-slate-900">{Math.round(item.v * (state.terrainArea / 100)).toLocaleString()} DH</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );

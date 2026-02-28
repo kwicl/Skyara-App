@@ -29,7 +29,7 @@ export const DETAILED_COSTS_REF = {
     SABLE: 6000,
     CIMENT: 12300,
     FER: 10560,
-    DIVERS: 2700, // PVC + Fil/Clous to match 50060
+    DIVERS: 2700, // PVC (1500) + Fil/Clous (1200)
   },
   RDC: {
     GROS_OEUVRE: {
