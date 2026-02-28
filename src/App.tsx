@@ -37,7 +37,8 @@ import {
   CartesianGrid
 } from 'recharts';
 import { Level, LevelType, ProjectState } from './types';
-import { DEFAULT_PRICES, SURFACE_RULES, DEFAULT_INVESTMENT } from './constants';
+import { DETAILED_COSTS_REF, DEFAULT_PRICES, SURFACE_RULES, DEFAULT_INVESTMENT } from './constants';
+import { calculateLevelCost, calculateTerrasseCost } from './services/costCalculator';
 import { generatePDF } from './utils/pdfExport';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -45,6 +46,8 @@ import { twMerge } from 'tailwind-merge';
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+const CHART_COLORS = ['#0d9488', '#0ea5e9', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e', '#f59e0b'];
 
 export default function App() {
   const [state, setState] = useState<ProjectState>({
@@ -102,32 +105,33 @@ export default function App() {
     let finition = 0;
     let totalSurface = 0;
     let totalSellableSurface = 0;
+    const allCategories: Record<string, number> = {};
 
     calculatedLevels.forEach(level => {
-      if (level.type === LevelType.FOUNDATION) {
-        // Based on 53,620 DH for 100m2
-        grosOeuvre += state.terrainArea * 536.2;
-      } else if (level.type === LevelType.RDC) {
-        // Based on 92,460 Gros + 96,400 Finition for 100m2
-        grosOeuvre += state.terrainArea * 924.6;
-        finition += state.terrainArea * 964;
-        totalSurface += level.surface;
-      } else if (level.type === LevelType.FLOOR) {
-        if (level.name.includes('Terrasse')) {
-          // Based on 31,380 Gros + 27,000 Finition for 100m2
-          grosOeuvre += state.terrainArea * 313.8;
-          finition += state.terrainArea * 270;
-        } else {
-          // Based on 96,600 Gros + 99,200 Finition for 100m2
-          grosOeuvre += state.terrainArea * 966;
-          finition += state.terrainArea * 992;
-          totalSurface += level.surface;
-        }
+      let cost;
+      if (level.name.toLowerCase().includes('terrasse')) {
+        cost = calculateTerrasseCost(state.terrainArea);
+      } else {
+        cost = calculateLevelCost(level.type, state.terrainArea, DETAILED_COSTS_REF.SURFACE_BASE);
       }
+
+      grosOeuvre += cost.grosOeuvre;
+      finition += cost.finition;
       
-      // Sum all sellable surfaces for revenue
+      if (level.type !== LevelType.FOUNDATION && !level.name.toLowerCase().includes('terrasse')) {
+        totalSurface += level.surface;
+      }
+
+      cost.categories.forEach(cat => {
+        allCategories[cat.name] = (allCategories[cat.name] || 0) + cat.value;
+      });
+      
       totalSellableSurface += (level as any).sellableSurface || 0;
     });
+
+    // Add fixed connection cost
+    grosOeuvre += DETAILED_COSTS_REF.RACCORDEMENT_FIXED;
+    allCategories['Raccordement Eau/Élec'] = DETAILED_COSTS_REF.RACCORDEMENT_FIXED;
 
     const constructionCost = grosOeuvre + finition;
     const landCost = state.terrainArea * state.landPricePerM2;
@@ -139,6 +143,11 @@ export default function App() {
     const stateTax = grossProfit > 0 ? grossProfit * (state.stateTaxPercentage / 100) : 0;
     const netProfit = grossProfit - stateTax;
     const marginPercentage = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+
+    const technicalData = Object.entries(allCategories).map(([name, value]) => ({
+      name,
+      value: Math.round(value)
+    })).sort((a, b) => b.value - a.value);
 
     // Material Estimations (Standard Moroccan R+2 Ratios)
     const estSteel = totalSurface * 38; // ~38kg/m2
@@ -159,6 +168,7 @@ export default function App() {
       marginPercentage,
       totalSurface,
       totalSellableSurface,
+      technicalData,
       estSteel,
       estCement,
       estBricks,
@@ -573,7 +583,7 @@ export default function App() {
               <div className="space-y-4">
                 <h5 className="font-bold text-teal-700 text-sm border-b border-teal-100 pb-2 flex justify-between items-center">
                   <span>1. Fondations</span>
-                  <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 536.2).toLocaleString()} DH</span>
+                  <span className="text-[10px] font-normal text-slate-400">~{Math.round(state.terrainArea * 500.6).toLocaleString()} DH</span>
                 </h5>
                 <ul className="text-xs space-y-2 text-slate-600">
                   <li className="flex justify-between"><span>Main d'œuvre (120 DH/m²)</span> <span className="font-bold">{Math.round(state.terrainArea * 120).toLocaleString()} DH</span></li>
@@ -583,7 +593,7 @@ export default function App() {
                   <li className="flex justify-between"><span>Ciment (1.5 sacs/m²)</span> <span className="font-bold">{Math.round(state.terrainArea * 123).toLocaleString()} DH</span></li>
                   <li className="flex justify-between"><span>Fer (6, 10, 12 mm)</span> <span className="font-bold">{Math.round(state.terrainArea * 105.6).toLocaleString()} DH</span></li>
                   <li className="flex justify-between"><span>Fil de fer et clous</span> <span className="font-bold">{Math.round(state.terrainArea * 12).toLocaleString()} DH</span></li>
-                  <li className="flex justify-between"><span>Tuyaux (PVC 200)</span> <span className="font-bold">{Math.round(state.terrainArea * 50.6).toLocaleString()} DH</span></li>
+                  <li className="flex justify-between"><span>Tuyaux (PVC 200)</span> <span className="font-bold">{Math.round(state.terrainArea * 15).toLocaleString()} DH</span></li>
                 </ul>
               </div>
 
@@ -655,6 +665,43 @@ export default function App() {
                     <Bar dataKey="val" fill="#0d9488" radius={[6, 6, 0, 0]} barSize={30} />
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+              <div className="mt-6">
+                <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Répartition Technique (%)</h5>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={totals.technicalData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={60}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {totals.technicalData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#fff', borderRadius: '15px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value: number) => `${value.toLocaleString()} DH`}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {totals.technicalData.slice(0, 4).map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-[10px]">
+                      <span className="text-slate-500 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }} />
+                        {item.name}
+                      </span>
+                      <span className="font-bold text-slate-700">{Math.round((item.value / totals.constructionCost) * 100)}%</span>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="mt-8 space-y-3">
                 <div className="flex justify-between items-center text-xs">

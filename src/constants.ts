@@ -19,6 +19,80 @@ export const SURFACE_RULES = {
   ENCORBELLEMENT: 6.5 // Average of 5.6 - 7
 };
 
+export const DETAILED_COSTS_REF = {
+  SURFACE_BASE: 100,
+  RACCORDEMENT_FIXED: 15000,
+  FOUNDATION: {
+    MO: 12000,
+    PIERRES: 3000,
+    GRAVIER: 3500,
+    SABLE: 6000,
+    CIMENT: 12300,
+    FER: 10560,
+    DIVERS: 2700, // PVC + Fil/Clous to match 50060
+  },
+  RDC: {
+    GROS_OEUVRE: {
+      MO: 24000,
+      BRIQUES: 12320,
+      GRAVIER: 3500,
+      SABLE: 6000,
+      CIMENT: 16080,
+      FER: 10560,
+      EAU_ELEC: 10000,
+      PLANCHER: 10000,
+    },
+    FINITION: {
+      PLATRE: 10400,
+      ZELLIGE: 19500,
+      MARBRE: 11000,
+      PEINTURE: 8000,
+      ALUMINIUM: 10500,
+      SANITAIRES: 4000,
+      BOIS: 8000,
+      FERRONNERIE: 10000,
+      CUISINE: 15000,
+    }
+  },
+  FLOOR: {
+    GROS_OEUVRE: {
+      MO: 24000,
+      BRIQUES: 13460,
+      GRAVIER: 3500,
+      SABLE: 6000,
+      CIMENT: 16080,
+      FER: 10560,
+      EAU_ELEC: 12000,
+      PLANCHER: 11000,
+    },
+    FINITION: {
+      PLATRE: 11700,
+      ZELLIGE: 19500,
+      MARBRE: 11000,
+      PEINTURE: 8000,
+      ALUMINIUM: 14000,
+      SANITAIRES: 4000,
+      FERRONNERIE: 6000,
+      BOIS: 10000,
+      CUISINE: 15000,
+    }
+  },
+  TERRASSE: {
+    GROS_OEUVRE: {
+      MO: 10000,
+      BRIQUES: 5120,
+      CIMENT: 4100,
+      FER: 6160,
+      SABLE: 6000,
+    },
+    FINITION: {
+      ZELLIGE: 16500,
+      PEINTURE: 8000,
+      FERRONNERIE: 2500,
+    }
+  }
+};
+
 export const INITIAL_LEVELS = [
   { id: 'foundation', type: 'FOUNDATION', name: 'Fondations' },
   { id: 'rdc', type: 'RDC', name: 'Rez-de-chaussée' },
