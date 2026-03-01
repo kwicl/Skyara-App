@@ -84,7 +84,97 @@ export const generatePDF = (state: ProjectState, totals: any) => {
   doc.text(`Briques: ${Math.round(totals.estBricks).toLocaleString()} Unités`, 14, finalY + 140);
   doc.text(`Béton: ${Math.round(totals.estConcrete)} m3`, 14, finalY + 147);
 
-  doc.text('Note: Ce devis est une estimation basée sur des standards moyens. Les prix réels peuvent varier.', 14, finalY + 160);
+  // Detailed Breakdown Section
+  doc.addPage();
+  doc.setFontSize(18);
+  doc.setTextColor(128, 0, 32); // Burgundy
+  doc.text('Détails Complets de Construction', 14, 20);
+  
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Basé sur un terrain de ${state.terrainArea} m²`, 14, 28);
 
-  doc.save(`Devis_Skyara_${state.terrainArea}m2.pdf`);
+  let currentY = 40;
+  const ratio = state.terrainArea / 100;
+
+  // 1. Fondations
+  doc.setFontSize(14);
+  doc.setTextColor(0);
+  doc.text('1. Fondations (الأساسات)', 14, currentY);
+  currentY += 10;
+  
+  autoTable(doc, {
+    startY: currentY,
+    head: [['Poste', 'Montant Estimé', 'Détail']],
+    body: [
+      ["Main d'œuvre", `${Math.round(12000 * ratio).toLocaleString()} DH`, "120 DH/m²"],
+      ["Pierres", `${Math.round(3000 * ratio).toLocaleString()} DH`, "30 m³ + 6 m³"],
+      ["Gravier", `${Math.round(3500 * ratio).toLocaleString()} DH`, "25 m³"],
+      ["Sable", `${Math.round(6000 * ratio).toLocaleString()} DH`, "22 m³"],
+      ["Ciment 45", `${Math.round(12300 * ratio).toLocaleString()} DH`, "150 sacs"],
+      ["Fer", `${Math.round(10560 * ratio).toLocaleString()} DH`, "6, 10, 12 mm"],
+      ["Total Fondations", `${Math.round(50060 * ratio).toLocaleString()} DH`, "Estimation Globale"]
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [128, 0, 32] }
+  });
+  currentY = (doc as any).lastAutoTable.finalY + 15;
+
+  // 2. RDC
+  doc.setFontSize(14);
+  doc.text('2. Rez-de-chaussée (الطابق السفلي)', 14, currentY);
+  currentY += 10;
+
+  autoTable(doc, {
+    startY: currentY,
+    head: [['Catégorie', 'Gros Œuvre', 'Finition', 'Total']],
+    body: [
+      ["Montants", `${Math.round(92460 * ratio).toLocaleString()} DH`, `${Math.round(96400 * ratio).toLocaleString()} DH`, `${Math.round(188860 * ratio).toLocaleString()} DH`]
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [128, 0, 32] }
+  });
+  currentY = (doc as any).lastAutoTable.finalY + 15;
+
+  // 3. Étages
+  const floors = state.levels.filter(l => l.type === 'FLOOR' && !l.name.includes('Terrasse'));
+  floors.forEach((floor, idx) => {
+    if (currentY > 240) { doc.addPage(); currentY = 20; }
+    doc.setFontSize(14);
+    doc.text(`${3 + idx}. ${floor.name}`, 14, currentY);
+    currentY += 10;
+    
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Poste', 'Montant / Étage']],
+      body: [
+        ["Gros Œuvre", `${Math.round(96600 * ratio).toLocaleString()} DH`],
+        ["Finition", `${Math.round(99200 * ratio).toLocaleString()} DH`],
+        ["Total Étage", `${Math.round(195800 * ratio).toLocaleString()} DH`]
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [128, 0, 32] }
+    });
+    currentY = (doc as any).lastAutoTable.finalY + 15;
+  });
+
+  // 4. Terrasse
+  if (currentY > 240) { doc.addPage(); currentY = 20; }
+  doc.setFontSize(14);
+  doc.text('Terrasse (السطح)', 14, currentY);
+  currentY += 10;
+  
+  autoTable(doc, {
+    startY: currentY,
+    head: [['Poste', 'Montant Estimé']],
+    body: [
+      ["Gros Œuvre", `${Math.round(31380 * ratio).toLocaleString()} DH`],
+      ["Finition", `${Math.round(27000 * ratio).toLocaleString()} DH`],
+      ["Total Terrasse", `${Math.round(58380 * ratio).toLocaleString()} DH`]
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [128, 0, 32] }
+  });
+
+  doc.save(`Rapport_Rentabilite_Skyara_${state.terrainArea}m2.pdf`);
 };

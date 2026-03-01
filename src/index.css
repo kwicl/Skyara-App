@@ -1,36 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;500;700&family=Syncopate:wght@400;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", sans-serif;
+  --font-futuristic: "Syncopate", sans-serif;
 }
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+    @apply bg-[#0a0a0c] text-slate-100 font-sans antialiased;
     -webkit-tap-highlight-color: transparent;
   }
 }
 
 .glass-panel {
-  @apply bg-white border border-slate-200 shadow-sm rounded-3xl;
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-[2.5rem];
 }
 
 .input-field {
-  @apply w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all text-base text-slate-900 placeholder-slate-400;
+  @apply w-full px-5 py-4 bg-white/5 border border-white/10 rounded-2xl focus:ring-2 focus:ring-[#800020] focus:border-[#800020] outline-none transition-all text-base text-white placeholder-slate-500 backdrop-blur-md;
 }
 
 .btn-primary {
-  @apply px-6 py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-md shadow-teal-500/20;
+  @apply px-8 py-4 bg-[#800020] text-white rounded-2xl font-extrabold hover:bg-[#a00028] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-lg shadow-[#800020]/30 uppercase tracking-widest text-xs;
 }
 
 .btn-secondary {
-  @apply px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center gap-2 border border-slate-200;
+  @apply px-8 py-4 bg-white/5 text-white rounded-2xl font-bold hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-3 border border-white/10 backdrop-blur-md;
 }
 
 .card-stat {
-  @apply bg-white p-6 rounded-3xl border border-slate-100 shadow-sm transition-all hover:shadow-md;
+  @apply bg-white/5 backdrop-blur-lg p-8 rounded-[2rem] border border-white/10 shadow-xl transition-all hover:border-white/20 hover:bg-white/10;
 }
 
 /* iPhone safe area padding */
@@ -43,5 +44,9 @@
 }
 
 .text-gradient {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-emerald-600;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-[#800020] to-[#ff4d4d];
+}
+
+.neo-blur {
+  @apply absolute inset-0 bg-[#800020]/10 blur-[120px] -z-10 rounded-full;
 }
