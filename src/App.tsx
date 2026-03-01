@@ -922,50 +922,80 @@ export default function App() {
             </div>
 
             {/* 3. Étages */}
-            <div className="pt-10 border-t border-slate-100">
-              <div className="flex items-center justify-between mb-8">
-                <h4 className="text-xl font-bold text-slate-900 flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-lg bg-[#800020] text-white flex items-center justify-center text-sm">3</span>
-                  Étages (الطابق الأول والثاني)
-                </h4>
-                <div className="flex gap-8">
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gros Œuvre / Étage</p>
-                    <p className="text-xl font-bold text-slate-900">{Math.round(96600 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+            {state.levels.filter(l => l.type === LevelType.FLOOR && !l.name.includes('Terrasse')).map((floor, idx) => (
+              <div key={floor.id} className="pt-10 border-t border-slate-100">
+                <div className="flex items-center justify-between mb-8">
+                  <h4 className="text-xl font-bold text-slate-900 flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-[#800020] text-white flex items-center justify-center text-sm">{3 + idx}</span>
+                    {floor.name} ({floor.name === '1er Étage' ? 'الطابق الأول' : 'الطابق الثاني'})
+                  </h4>
+                  <div className="flex gap-8">
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gros Œuvre</p>
+                      <p className="text-xl font-bold text-slate-900">{Math.round(96600 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Finition</p>
+                      <p className="text-xl font-bold text-slate-900">{Math.round(99200 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total {floor.name}</p>
+                      <p className="text-2xl font-bold text-[#800020]">{Math.round(195800 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Finition / Étage</p>
-                    <p className="text-xl font-bold text-slate-900">{Math.round(99200 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                </div>
+                
+                <p className="text-xs text-slate-500 mb-6 italic">Note: Coûts incluant les balcons et projections (البروزات).</p>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                  <div className="space-y-4">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Détail Gros Œuvre (البناء)</p>
+                    <div className="bg-white rounded-3xl p-6 border border-slate-100 space-y-3">
+                      {[
+                        { l: "Main d'œuvre", v: 24000, d: "240 DH/m²" },
+                        { l: "Briques (12 & 8)", v: 14000, d: "Plus d'unités (Balcons)" },
+                        { l: "Matériaux (Gravier/Sable)", v: 9500, d: "Base 100m²" },
+                        { l: "Ciment (35 & 45)", v: 16100, d: "200 sacs" },
+                        { l: "Fer (6, 10, 12 mm)", v: 10000, d: "Structure" },
+                        { l: "Électricité & Plomberie", v: 12000, d: "Installation Étage" },
+                        { l: "Plancher (Hourdis)", v: 11000, d: "Poutrelles" }
+                      ].map((item, i) => (
+                        <div key={i} className="flex justify-between items-center text-sm">
+                          <span className="text-slate-600">{item.l}</span>
+                          <span className="font-bold text-slate-900">{Math.round(item.v * (state.terrainArea / 100)).toLocaleString()} DH</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total par Étage</p>
-                    <p className="text-2xl font-bold text-[#800020]">{Math.round(195800 * (state.terrainArea / 100)).toLocaleString()} DH</p>
+                  <div className="space-y-4">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Détail Finition (الإصلاح)</p>
+                    <div className="bg-white rounded-3xl p-6 border border-slate-100 space-y-3">
+                      {[
+                        { l: "Plâtre (الجبص)", v: 11700, d: "90 m²" },
+                        { l: "Carrelage (الزليج)", v: 19500, d: "130 m²" },
+                        { l: "Marbre (الرخام)", v: 11000, d: "Escaliers/Salons" },
+                        { l: "Peinture (الصباغة)", v: 8000, d: "Main d'œuvre incluse" },
+                        { l: "Aluminium (5 fenêtres)", v: 14000, d: "Profilé Étage" },
+                        { l: "Menuiserie Bois", v: 10000, d: "5 portes" },
+                        { l: "Sanitaires & Plomberie", v: 10000, d: "Salles de bain" },
+                        { l: "Cuisine / Placards", v: 15000, d: "Complet" }
+                      ].map((item, i) => (
+                        <div key={i} className="flex justify-between items-center text-sm">
+                          <span className="text-slate-600">{item.l}</span>
+                          <span className="font-bold text-slate-900">{Math.round(item.v * (state.terrainArea / 100)).toLocaleString()} DH</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mb-6 italic">Note: Légère augmentation due aux balcons et projections (البروزات).</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                  { l: "Briques (12 & 8)", v: 14000, d: "Plus d'unités" },
-                  { l: "Électricité/Plomberie", v: 12000, d: "Étage" },
-                  { l: "Plancher (Hourdis)", v: 11000, d: "Étage" },
-                  { l: "Plâtre (90 m²)", v: 11700, d: "Étage" },
-                  { l: "Aluminium (5 fenêtres)", v: 14000, d: "Étage" },
-                  { l: "Bois (5 portes)", v: 10000, d: "Étage" }
-                ].map((item, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-white border border-slate-100">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">{item.l}</p>
-                    <p className="font-bold text-slate-900">{Math.round(item.v * (state.terrainArea / 100)).toLocaleString()} DH</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
 
             {/* 4. Terrasse */}
             <div className="pt-10 border-t border-slate-100">
               <div className="flex items-center justify-between mb-8">
                 <h4 className="text-xl font-bold text-slate-900 flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-lg bg-[#800020] text-white flex items-center justify-center text-sm">4</span>
+                  <span className="w-8 h-8 rounded-lg bg-[#800020] text-white flex items-center justify-center text-sm">5</span>
                   Terrasse/Toit (السطح)
                 </h4>
                 <div className="flex gap-8">
